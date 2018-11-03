@@ -69,7 +69,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     cout << "EKF: " << endl;
     ekf_.x_ = VectorXd(4);
     ekf_.x_ << 1, 1, 1, 1;
-    float px, py, vx, vy;
+    float px, py;
 
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       /**
@@ -77,9 +77,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       */
       px = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
       py = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]);
-      vx = measurement_pack.raw_measurements_[2]*cos(measurement_pack.raw_measurements_[1]);
-      vy = measurement_pack.raw_measurements_[2]*sin(measurement_pack.raw_measurements_[1]);
-      ekf_.x_ << px, py, vx, vy;
+      ekf_.x_ << px, py, 0, 0;
+      ekf_.R_ = R_radar_;
+      ekf_.H_ = Hj_;
       
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -89,6 +89,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       px = measurement_pack.raw_measurements_[0];
       py = measurement_pack.raw_measurements_[1];
       ekf_.x_ << px, py, 0, 0;
+      ekf_.R_ = R_laser_;
+      ekf_.H_ = H_laser_;
 
     }
     ekf_.P_ = MatrixXd(4, 4);
