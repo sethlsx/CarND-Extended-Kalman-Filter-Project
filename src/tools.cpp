@@ -29,7 +29,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   for(int i=0; i < estimations.size(); ++i)
   {
   	temp = estimations[i] - ground_truth[i];
-  	temp = temp*temp;
+  	temp = temp.array()*temp.array();
   	rmse += temp;
   }
   rmse = rmse/estimations.size();
@@ -47,16 +47,19 @@ MatrixXd Tools::CalculateJacobian(const VectorXd& x_state) {
 	float py = x_state(1);
 	float vx = x_state(2);
 	float vy = x_state(3);
-	if ((px == py) & (px == 0))
+	if ((px == py) && (px == 0))
 	{
 		cout << "Error! Divided by zero!" << endl;
 		return Hj;
 	}
-	double sqr;
-	sqr = pow((px*px + py*py), 0.5);
-	Hj << px/sqr, py/sqr, 0, 0,
-	      -py/(sqr*sqr), px/(sqr*sqr), 0, 0,
-	      py*(vx*py-vy*px)/(sqr*sqr*sqr), px*(vy*px-vx*py)/(sqr*sqr*sqr), px/sqr, py/sqr;
+	//double sqr;
+	//sqr = pow((px*px + py*py), 0.5);
+  double c1 = px*px + py*py;
+  double c2 = sqrt(c1);
+  double c3 = c1 * c2;
+	Hj << px/c2, py/c2, 0, 0,
+	      -py/c1, px/c1, 0, 0,
+	      py*(vx*py-vy*px)/c3, px*(vy*px-vx*py)/c3, px/c2, py/c2;
 
 	return Hj;
 }

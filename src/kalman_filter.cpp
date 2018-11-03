@@ -1,5 +1,8 @@
 #include "kalman_filter.h"
 #include "tools.h"
+#include <iostream>
+
+#define PI 3.14159265
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -51,21 +54,32 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
     * update the state by using Extended Kalman Filter equations
   */
   Tools tools;
-  MatrixXd Hj = tools.CaculateJacobian(z);
+  //cout << "Before the CalculateJacobian" << endl;
+  H_ = tools.CalculateJacobian(x_);
   float px = x_[0];
   float py = x_[1];
   float vx = x_[2];
   float vy = x_[3];
-  VectorXd h;
-  h << (px*px + py*py).sqrt(), atan2(py/px), (px*vx + py*vy)/(px*px+py*py).sqrt();
+  VectorXd h(3);
+  double sqr = pow((px*px + py*py), 0.5);
+  h << sqr, atan2(py, px), (px*vx + py*vy)/sqr;
   VectorXd z_pred = h;
   VectorXd y = z - z_pred;
-  MatrixXd S = Hj * P_ * Hj.transpose() + R_;
-  MatrixXd K = P_ * Hj.transpose() * S.inverse();
+  while((y[1]>PI)||(y[1]<-PI)){
+    if(y[1]>PI){
+      y[1] -= 2*PI;
+    }
+    else if(y[1]<-PI){
+      y[1] += 2*PI;
+    
+    }
+  }
+  MatrixXd S = H_ * P_ * H_.transpose() + R_;
+  MatrixXd K = P_ * H_.transpose() * S.inverse();
 
   x_= x_ + (K * y);
   MatrixXd I = MatrixXd::Identity(x_.size(), x_.size());
-  P_ = (I - K * Hj) * P_;
+  P_ = (I - K * H_) * P_;
 
 
 }

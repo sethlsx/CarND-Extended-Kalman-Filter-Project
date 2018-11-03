@@ -24,20 +24,20 @@ FusionEKF::FusionEKF() {
 
   //measurement covariance matrix - laser
   R_laser_ << 0.0225, 0,
-        0, 0.0225;
+              0, 0.0225;
 
   //measurement covariance matrix - radar
   R_radar_ << 0.09, 0, 0,
-        0, 0.0009, 0,
-        0, 0, 0.09;
+              0, 0.0009, 0,
+              0, 0, 0.09;
 
   /**
   TODO:
     * Finish initializing the FusionEKF.
     * Set the process and measurement noises
   */
-  H_laser_ << 1.0, 0, 0, 0
-        0, 1.0, 0, 0;
+  H_laser_ << 1.0, 0, 0, 0,
+              0, 1.0, 0, 0;
 
   Hj_ << 0, 0, 0, 0,
          0, 0, 0, 0,
@@ -78,8 +78,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       px = measurement_pack.raw_measurements_[0]*cos(measurement_pack.raw_measurements_[1]);
       py = measurement_pack.raw_measurements_[0]*sin(measurement_pack.raw_measurements_[1]);
       ekf_.x_ << px, py, 0, 0;
-      ekf_.R_ = R_radar_;
-      ekf_.H_ = Hj_;
+      
       
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
@@ -89,10 +88,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       px = measurement_pack.raw_measurements_[0];
       py = measurement_pack.raw_measurements_[1];
       ekf_.x_ << px, py, 0, 0;
-      ekf_.R_ = R_laser_;
-      ekf_.H_ = H_laser_;
 
     }
+
     ekf_.P_ = MatrixXd(4, 4);
     ekf_.P_ << 1, 0, 0, 0,
                0, 1, 0, 0,
@@ -124,19 +122,21 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
              0, 1, 0, dt,
              0, 0, 1, 0,
              0, 0, 0, 1;
-  MatrixXd G;
+  MatrixXd G(4, 2);
   G << dt*dt/2, 0,
        0, dt*dt/2,
        dt, 0,
        0, dt;
-  MatrixXd Qmu;
-  noise_ax = 9;
-  noise_ay = 9;
-  Qmu << noise_ax*noise_ax, 0,
-         0, noise_ay*noise_ay;
+  MatrixXd Qmu(2, 2);
+  float noise_ax = 9;
+  float noise_ay = 9;
+  Qmu << noise_ax, 0,
+         0, noise_ay;
 
   ekf_.Q_ = MatrixXd(4, 4);
-  ekf_.Q_ << G*Qmu*G.transpose();
+  ekf_.Q_ << G * Qmu * G.transpose();
+  
+  //cout << "Before the prediction." << endl;
 
   ekf_.Predict();
 
@@ -152,9 +152,21 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     // Radar updates
+    //cout << "1" << endl;
+    ekf_.R_ = MatrixXd(3, 3);
+    ekf_.R_ = R_radar_;
+    ekf_.H_ = MatrixXd(3, 4);
+    ekf_.H_ = Hj_;
+    //cout << "before the radar" << endl;
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
+    //cout << "after the radar" << endl;
   } else {
     // Laser updates
+    //cout << '2' << endl;
+    ekf_.R_ = MatrixXd(2, 2);
+    ekf_.R_ = R_laser_;
+    ekf_.H_ = MatrixXd(2, 4);
+    ekf_.H_ = H_laser_;
     ekf_.Update(measurement_pack.raw_measurements_);
   }
 
