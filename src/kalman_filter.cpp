@@ -26,7 +26,7 @@ void KalmanFilter::Predict() {
   TODO:
     * predict the state
   */
-  x_ = F_*x_;
+  x_ = F_ * x_;
   P_ = F_ * P_ * F_.transpose() + Q_;
 }
 
@@ -51,7 +51,21 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
     * update the state by using Extended Kalman Filter equations
   */
   Tools tools;
-  H_ = tools.CaculateJacobian(z);
-  Update(z);
+  MatrixXd Hj = tools.CaculateJacobian(z);
+  float px = x_[0];
+  float py = x_[1];
+  float vx = x_[2];
+  float vy = x_[3];
+  VectorXd h;
+  h << (px*px + py*py).sqrt(), atan2(py/px), (px*vx + py*vy)/(px*px+py*py).sqrt();
+  VectorXd z_pred = h;
+  VectorXd y = z - z_pred;
+  MatrixXd S = Hj * P_ * Hj.transpose() + R_;
+  MatrixXd K = P_ * Hj.transpose() * S.inverse();
+
+  x_= x_ + (K * y);
+  MatrixXd I = MatrixXd::Identity(x_.size(), x_.size());
+  P_ = (I - K * Hj) * P_;
+
 
 }
